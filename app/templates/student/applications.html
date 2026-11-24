@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+
+{% block title %}My Applications{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="mb-0 fw-bold"><i class="bi bi-file-earmark-text-fill me-2 text-primary"></i>My Club Applications</h2>
+        <p class="text-muted mb-0">Track the review status of your membership applications</p>
+    </div>
+    <a href="{{ url_for('student.clubs') }}" class="btn btn-primary">
+        <i class="bi bi-search me-1"></i>Browse More Clubs
+    </a>
+</div>
+
+<!-- Filter Tabs -->
+<div class="mb-4">
+    <div class="btn-group" role="group">
+        <a href="{{ url_for('student.my_applications') }}"
+           class="btn btn-outline-secondary {{ 'active' if not status_filter else '' }}">All</a>
+        <a href="{{ url_for('student.my_applications', status='pending') }}"
+           class="btn btn-outline-warning {{ 'active' if status_filter == 'pending' else '' }}">Pending</a>
+        <a href="{{ url_for('student.my_applications', status='approved') }}"
+           class="btn btn-outline-success {{ 'active' if status_filter == 'approved' else '' }}">Approved</a>
+        <a href="{{ url_for('student.my_applications', status='rejected') }}"
+           class="btn btn-outline-danger {{ 'active' if status_filter == 'rejected' else '' }}">Rejected</a>
+        <a href="{{ url_for('student.my_applications', status='withdrawn') }}"
+           class="btn btn-outline-secondary {{ 'active' if status_filter == 'withdrawn' else '' }}">Withdrawn</a>
+    </div>
+</div>
+
+<div class="card shadow-sm border-0">
+    <div class="card-body p-0">
+        {% if applications %}
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th class="ps-3">#</th>
+                        <th>Club Name</th>
+                        <th>Category</th>
+                        <th>Applied Date</th>
+                        <th>Reviewed Date</th>
+                        <th>Status</th>
+                        <th class="pe-3 text-end">Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for app in applications %}
+                    <tr>
+                        <td class="ps-3 text-muted small">{{ app.id }}</td>
+                        <td>
+                            <a href="{{ url_for('student.club_detail', club_id=app.club_id) }}" class="fw-semibold text-decoration-none">
+                                {{ app.club.name if app.club else 'Club #' ~ app.club_id }}
+                            </a>
+                        </td>
+                        <td>
+                            <span class="badge bg-secondary-subtle text-secondary">
+                                {{ app.club.category if app.club and app.club.category else 'General' }}
+                            </span>
+                        </td>
+                        <td class="text-muted small">{{ app.applied_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                        <td class="text-muted small">
+                            {{ app.reviewed_at.strftime('%Y-%m-%d %H:%M') if app.reviewed_at else '—' }}
+                        </td>
+                        <td>
+                            {% if app.status == 'approved' %}
+                                <span class="badge bg-success"><i class="bi bi-check-circle me-1"></i>Approved</span>
+                            {% elif app.status == 'pending' %}
+                                <span class="badge bg-warning text-dark"><i class="bi bi-clock me-1"></i>Pending</span>
+                            {% elif app.status == 'rejected' %}
+                                <span class="badge bg-danger"><i class="bi bi-x-circle me-1"></i>Rejected</span>
+                            {% else %}
+                                <span class="badge bg-secondary"><i class="bi bi-dash-circle me-1"></i>Withdrawn</span>
+                            {% endif %}
+                        </td>
+                        <td class="pe-3 text-end">
+                            <div class="d-flex gap-2 justify-content-end">
+                                <a href="{{ url_for('student.application_detail', app_id=app.id) }}" class="btn btn-sm btn-outline-secondary">
+                                    View
+                                </a>
+                                {% if app.status == 'pending' %}
+                                <form method="POST" action="{{ url_for('student.withdraw', application_id=app.id) }}">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <button type="submit" class="btn btn-sm btn-outline-danger">
+                                        Withdraw
+                                    </button>
+                                </form>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-5 text-muted">
+            <i class="bi bi-inbox fs-1 d-block mb-2"></i>
+            No applications found.
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

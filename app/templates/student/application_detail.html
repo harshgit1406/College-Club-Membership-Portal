@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+
+{% block title %}Application #{{ application.id }}{% endblock %}
+
+{% block content %}
+<div class="mb-4">
+    <a href="{{ url_for('student.my_applications') }}" class="btn btn-outline-secondary btn-sm">
+        <i class="bi bi-arrow-left me-1"></i>Back to My Applications
+    </a>
+</div>
+
+<div class="card shadow-sm border-0 max-w-lg">
+    <div class="card-header bg-transparent fw-semibold">
+        Application Details #{{ application.id }}
+    </div>
+    <div class="card-body p-4">
+        <div class="row mb-3">
+            <div class="col-sm-4 text-muted">Target Club:</div>
+            <div class="col-sm-8 fw-semibold">{{ application.club.name if application.club else 'N/A' }}</div>
+        </div>
+        <div class="row mb-3">
+            <div class="col-sm-4 text-muted">Status:</div>
+            <div class="col-sm-8">
+                <span class="badge {{ 'bg-success' if application.status == 'approved' else ('bg-warning text-dark' if application.status == 'pending' else 'bg-secondary') }}">
+                    {{ application.status|capitalize }}
+                </span>
+            </div>
+        </div>
+        <div class="row mb-3">
+            <div class="col-sm-4 text-muted">Submitted At:</div>
+            <div class="col-sm-8 text-muted">{{ application.applied_at.strftime('%Y-%m-%d %H:%M:%S UTC') }}</div>
+        </div>
+        {% if application.reviewed_at %}
+        <div class="row mb-3">
+            <div class="col-sm-4 text-muted">Reviewed At:</div>
+            <div class="col-sm-8 text-muted">{{ application.reviewed_at.strftime('%Y-%m-%d %H:%M:%S UTC') }}</div>
+        </div>
+        {% endif %}
+        {% if application.notes %}
+        <div class="row mb-3">
+            <div class="col-sm-4 text-muted">Coordinator Notes:</div>
+            <div class="col-sm-8">{{ application.notes }}</div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

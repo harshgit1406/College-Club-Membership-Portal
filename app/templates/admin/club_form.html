@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+
+{% block title %}{{ 'Edit Club' if club else 'Create New Club' }}{% endblock %}
+
+{% block content %}
+<div class="mb-4">
+    <a href="{{ url_for('admin.clubs') }}" class="btn btn-outline-secondary btn-sm">
+        <i class="bi bi-arrow-left me-1"></i>Back to Clubs
+    </a>
+</div>
+
+<div class="card shadow-sm border-0 max-w-lg">
+    <div class="card-header bg-transparent py-3">
+        <h4 class="mb-0 fw-bold">{{ 'Edit Club: ' ~ club.name if club else 'Create New Campus Club' }}</h4>
+    </div>
+    <div class="card-body p-4">
+        <form method="POST">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+            <div class="mb-3">
+                <label for="name" class="form-label fw-semibold">Club Name <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" id="name" name="name" required
+                       value="{{ club.name if club else '' }}" placeholder="e.g. Robotics Club">
+            </div>
+
+            <div class="mb-3">
+                <label for="category" class="form-label fw-semibold">Category</label>
+                <input type="text" class="form-control" id="category" name="category"
+                       value="{{ club.category if club else '' }}" placeholder="e.g. Technology, Arts, Sports">
+            </div>
+
+            <div class="mb-3">
+                <label for="max_members" class="form-label fw-semibold">Member Limit (Capacity)</label>
+                <input type="number" class="form-control" id="max_members" name="max_members" min="1"
+                       value="{{ club.max_members if club else 50 }}">
+                <div class="form-text">Prevents applications once approved member count reaches this limit.</div>
+            </div>
+
+            <div class="mb-3">
+                <label for="coordinator_id" class="form-label fw-semibold">Assigned Coordinator</label>
+                <select class="form-select" id="coordinator_id" name="coordinator_id">
+                    <option value="">-- No Coordinator (Admin Managed) --</option>
+                    {% for coord in coordinators %}
+                    <option value="{{ coord.id }}"
+                            {% if club and club.coordinator_id == coord.id %}selected{% endif %}>
+                        {{ coord.username }} ({{ coord.email }})
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="mb-4">
+                <label for="description" class="form-label fw-semibold">Description</label>
+                <textarea class="form-control" id="description" name="description" rows="4"
+                          placeholder="Describe the club's mission, meetings, and activities...">{{ club.description if club else '' }}</textarea>
+            </div>
+
+            <button type="submit" class="btn btn-primary px-4">
+                <i class="bi bi-save me-1"></i>{{ 'Save Changes' if club else 'Create Club' }}
+            </button>
+        </form>
+    </div>
+</div>
+{% endblock %}

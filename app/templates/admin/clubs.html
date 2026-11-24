@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+
+{% block title %}Manage Clubs{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="mb-0 fw-bold"><i class="bi bi-building me-2 text-primary"></i>Manage Clubs</h2>
+        <p class="text-muted mb-0">Create clubs, configure capacity, and assign faculty/student coordinators</p>
+    </div>
+    <a href="{{ url_for('admin.create_club') }}" class="btn btn-primary">
+        <i class="bi bi-plus-lg me-1"></i>New Club
+    </a>
+</div>
+
+<div class="card shadow-sm border-0">
+    <div class="card-body p-0">
+        {% if clubs %}
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th class="ps-3">#</th>
+                        <th>Club Name</th>
+                        <th>Category</th>
+                        <th>Coordinator</th>
+                        <th>Approved Members</th>
+                        <th>Status</th>
+                        <th class="pe-3 text-center">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for club in clubs %}
+                    <tr class="{{ 'table-secondary text-muted' if not club.is_active else '' }}">
+                        <td class="ps-3 text-muted small">{{ club.id }}</td>
+                        <td class="fw-bold">{{ club.name }}</td>
+                        <td><span class="badge bg-secondary-subtle text-secondary">{{ club.category or 'General' }}</span></td>
+                        <td>
+                            {% if club.coordinator %}
+                                <span class="badge bg-info-subtle text-info border border-info-subtle">
+                                    <i class="bi bi-person me-1"></i>{{ club.coordinator.username }}
+                                </span>
+                            {% else %}
+                                <span class="text-muted small">Unassigned</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ club.approved_member_count }} / {{ club.max_members }}</td>
+                        <td>
+                            {% if club.is_active %}
+                                <span class="badge bg-success">Active</span>
+                            {% else %}
+                                <span class="badge bg-secondary">Inactive</span>
+                            {% endif %}
+                        </td>
+                        <td class="pe-3 text-center">
+                            <div class="d-flex gap-1 justify-content-center">
+                                <a href="{{ url_for('admin.edit_club', club_id=club.id) }}" class="btn btn-sm btn-outline-secondary" title="Edit">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                                <form method="POST" action="{{ url_for('admin.toggle_club', club_id=club.id) }}" class="d-inline">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <button type="submit" class="btn btn-sm {{ 'btn-outline-danger' if club.is_active else 'btn-outline-success' }}"
+                                            title="{{ 'Deactivate' if club.is_active else 'Activate' }}">
+                                        <i class="bi {{ 'bi-pause-circle' if club.is_active else 'bi-play-circle' }}"></i>
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-5 text-muted">
+            <i class="bi bi-building-x fs-1 d-block mb-2"></i>
+            No clubs registered yet.
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

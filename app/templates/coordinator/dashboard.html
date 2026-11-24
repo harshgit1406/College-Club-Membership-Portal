@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+
+{% block title %}Coordinator Dashboard{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="mb-0 fw-bold"><i class="bi bi-speedometer2 me-2 text-primary"></i>Coordinator Dashboard</h2>
+        <p class="text-muted mb-0">Overview of clubs under your supervision</p>
+    </div>
+</div>
+
+<!-- Stats -->
+<div class="row g-4 mb-4">
+    <div class="col-md-4">
+        <div class="card stat-card border-start border-warning border-4 shadow-sm h-100">
+            <div class="card-body">
+                <div class="text-muted small text-uppercase fw-semibold">Pending Applications</div>
+                <div class="display-6 fw-bold text-warning">{{ total_pending }}</div>
+                <div class="small text-muted mt-1">Awaiting your approval or rejection</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card stat-card border-start border-success border-4 shadow-sm h-100">
+            <div class="card-body">
+                <div class="text-muted small text-uppercase fw-semibold">Approved Members</div>
+                <div class="display-6 fw-bold text-success">{{ total_approved }}</div>
+                <div class="small text-muted mt-1">Active members across clubs</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card stat-card border-start border-danger border-4 shadow-sm h-100">
+            <div class="card-body">
+                <div class="text-muted small text-uppercase fw-semibold">Rejected Requests</div>
+                <div class="display-6 fw-bold text-danger">{{ total_rejected }}</div>
+                <div class="small text-muted mt-1">Declined applications</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Assigned Clubs List -->
+<h4 class="fw-bold mb-3"><i class="bi bi-building me-2"></i>My Clubs</h4>
+<div class="row g-4">
+    {% if clubs %}
+        {% for stat in club_stats %}
+        <div class="col-md-6">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-header bg-transparent d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0 fw-bold">{{ stat.club.name }}</h5>
+                    <span class="badge bg-primary-subtle text-primary">{{ stat.club.category or 'General' }}</span>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted small">{{ stat.club.description or 'No description.' }}</p>
+
+                    <div class="d-flex justify-content-between small text-muted mb-2">
+                        <span>Capacity:</span>
+                        <span class="fw-semibold">{{ stat.approved }} / {{ stat.club.max_members }}</span>
+                    </div>
+                    <div class="progress mb-3" style="height: 8px;">
+                        <div class="progress-bar bg-success" style="width: {{ (stat.approved / [stat.club.max_members, 1]|max * 100)|int }}%"></div>
+                    </div>
+
+                    <div class="d-flex justify-content-between align-items-center mt-3">
+                        <div>
+                            {% if stat.pending > 0 %}
+                                <span class="badge bg-warning text-dark">
+                                    <i class="bi bi-bell-fill me-1"></i>{{ stat.pending }} Pending
+                                </span>
+                            {% else %}
+                                <span class="badge bg-secondary-subtle text-secondary">No pending</span>
+                            {% endif %}
+                        </div>
+                        <div class="d-flex gap-2">
+                            <a href="{{ url_for('coordinator.member_list', club_id=stat.club.id) }}" class="btn btn-sm btn-outline-secondary">
+                                <i class="bi bi-people me-1"></i>Members
+                            </a>
+                            <a href="{{ url_for('coordinator.manage_club', club_id=stat.club.id) }}" class="btn btn-sm btn-primary">
+                                <i class="bi bi-clipboard-check me-1"></i>Review
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    {% else %}
+        <div class="col-12 text-center py-5 text-muted">
+            <i class="bi bi-building-slash display-4 d-block mb-2"></i>
+            You are not currently assigned to coordinate any clubs.
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

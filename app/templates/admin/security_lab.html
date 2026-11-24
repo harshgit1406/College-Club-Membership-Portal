@@ -1,0 +1,417 @@
+{% extends "base.html" %}
+
+{% block title %}Security Testing Dashboard{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+    <div>
+        <h2 class="mb-0 fw-bold">
+            <i class="bi bi-shield-shaded me-2 text-danger"></i>Security Testing Laboratory
+        </h2>
+        <p class="text-muted mb-0">Automated vulnerability verification and defensive implementation audit</p>
+    </div>
+    <div class="d-flex gap-2">
+        <form method="POST" action="{{ url_for('admin.run_all_security_tests') }}" class="d-inline">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="btn btn-danger" id="btnRunAll">
+                <i class="bi bi-play-circle-fill me-1"></i>Run All Tests
+            </button>
+        </form>
+        <div class="dropdown">
+            <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                <i class="bi bi-download me-1"></i>Export Report
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end shadow">
+                <li>
+                    <a class="dropdown-item" href="{{ url_for('admin.export_security_report', fmt='html') }}">
+                        <i class="bi bi-filetype-html me-2 text-danger"></i>Download HTML Report
+                    </a>
+                </li>
+                <li>
+                    <a class="dropdown-item" href="{{ url_for('admin.export_security_report', fmt='json') }}">
+                        <i class="bi bi-filetype-json me-2 text-primary"></i>Download JSON Data
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<!-- Scorecard Summary -->
+<div class="row g-4 mb-4">
+    <div class="col-sm-6 col-lg-3">
+        <div class="card stat-card border-start border-primary border-4 shadow-sm h-100">
+            <div class="card-body">
+                <div class="text-muted small text-uppercase fw-semibold">Tests Executed</div>
+                <div class="display-6 fw-bold text-primary">{{ summary.total }}</div>
+                <div class="text-muted small">Full automated suite</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-lg-3">
+        <div class="card stat-card border-start border-success border-4 shadow-sm h-100">
+            <div class="card-body">
+                <div class="text-muted small text-uppercase fw-semibold">Tests Passed</div>
+                <div class="display-6 fw-bold text-success">{{ summary.passed }}</div>
+                <div class="text-success small"><i class="bi bi-check-circle me-1"></i>{{ summary.score_pct }}% Defended</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-lg-3">
+        <div class="card stat-card border-start border-danger border-4 shadow-sm h-100">
+            <div class="card-body">
+                <div class="text-muted small text-uppercase fw-semibold">Vulnerabilities Detected</div>
+                <div class="display-6 fw-bold {{ 'text-danger' if summary.failed > 0 else 'text-muted' }}">{{ summary.failed }}</div>
+                <div class="small {{ 'text-danger' if summary.failed > 0 else 'text-muted' }}">
+                    {{ 'Action required' if summary.failed > 0 else 'Zero active vulnerabilities' }}
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-lg-3">
+        <div class="card stat-card border-start border-info border-4 shadow-sm h-100">
+            <div class="card-body">
+                <div class="text-muted small text-uppercase fw-semibold">Total Execution Time</div>
+                <div class="display-6 fw-bold text-info">{{ summary.total_time_ms }} ms</div>
+                <div class="text-muted small">Isolated runtime benchmark</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ========================================================================= -->
+<!-- INTERACTIVE ATTACK ARENA & LIVE PAYLOAD PROBING CONSOLE                   -->
+<!-- ========================================================================= -->
+<div class="card shadow-sm border-0 mb-4 bg-gradient">
+    <div class="card-header bg-dark text-white py-3 d-flex justify-content-between align-items-center">
+        <div>
+            <h5 class="mb-0 fw-bold">
+                <i class="bi bi-terminal-fill me-2 text-warning"></i>Live Attack Simulation & Payload Testing Arena
+            </h5>
+            <small class="text-secondary">Type custom attack payloads and watch the portal's security controls neutralize them in real-time</small>
+        </div>
+        <span class="badge bg-danger">Live Probing Active</span>
+    </div>
+    <div class="card-body p-4 bg-light">
+        <form id="attackSimulationForm" class="row g-3">
+            <div class="col-md-4">
+                <label for="simAttackType" class="form-label fw-bold small text-uppercase">
+                    <i class="bi bi-crosshair me-1 text-danger"></i>Attack Vector
+                </label>
+                <select class="form-select fw-semibold" id="simAttackType" name="attack_type">
+                    <option value="sqli" selected>💉 SQL Injection (SQLi)</option>
+                    <option value="xss">⚡ Cross-Site Scripting (XSS)</option>
+                    <option value="csrf">🛡️ CSRF (Forged Origin / Missing Token)</option>
+                    <option value="idor">🔓 IDOR (Object Reference Tampering)</option>
+                    <option value="password">🔑 Insecure / Dictionary Password</option>
+                    <option value="path_traversal">📂 Path Traversal (LFI)</option>
+                </select>
+            </div>
+
+            <div class="col-md-8">
+                <label for="simPayload" class="form-label fw-bold small text-uppercase">
+                    <i class="bi bi-code-slash me-1 text-primary"></i>Custom Attack String / Payload
+                </label>
+                <div class="input-group">
+                    <input type="text" class="form-control font-monospace" id="simPayload" name="payload"
+                           placeholder="Type custom attack payload here…" value="' OR '1'='1">
+                    <button type="submit" class="btn btn-danger px-4 fw-semibold" id="btnLaunchAttack">
+                        <span id="simSpinner" class="spinner-border spinner-border-sm me-1 d-none"></span>
+                        <i class="bi bi-lightning-fill me-1" id="simIcon"></i>Launch Attack
+                    </button>
+                </div>
+            </div>
+
+            <!-- Quick Payload Preset Buttons -->
+            <div class="col-12">
+                <small class="text-muted fw-semibold me-2">Sample Payloads:</small>
+                <button type="button" class="btn btn-xs btn-outline-secondary btn-sm py-0 px-2 btn-preset"
+                        data-type="sqli" data-val="' OR '1'='1">' OR '1'='1</button>
+                <button type="button" class="btn btn-xs btn-outline-secondary btn-sm py-0 px-2 btn-preset"
+                        data-type="sqli" data-val="admin' --">admin' --</button>
+                <button type="button" class="btn btn-xs btn-outline-secondary btn-sm py-0 px-2 btn-preset"
+                        data-type="sqli" data-val="' UNION SELECT 1, 'admin', 'hash', 'admin' --">' UNION SELECT ...</button>
+                <button type="button" class="btn btn-xs btn-outline-secondary btn-sm py-0 px-2 btn-preset"
+                        data-type="xss" data-val="<script>alert('XSS_POC')</script>">&lt;script&gt;alert(1)&lt;/script&gt;</button>
+                <button type="button" class="btn btn-xs btn-outline-secondary btn-sm py-0 px-2 btn-preset"
+                        data-type="xss" data-val="<img src=x onerror=alert(document.cookie)>">&lt;img onerror=alert()&gt;</button>
+                <button type="button" class="btn btn-xs btn-outline-secondary btn-sm py-0 px-2 btn-preset"
+                        data-type="idor" data-val="1">IDOR: Application #1</button>
+                <button type="button" class="btn btn-xs btn-outline-secondary btn-sm py-0 px-2 btn-preset"
+                        data-type="password" data-val="password123">Weak: password123</button>
+                <button type="button" class="btn btn-xs btn-outline-secondary btn-sm py-0 px-2 btn-preset"
+                        data-type="path_traversal" data-val="../../instance/dev.db">../../instance/dev.db</button>
+            </div>
+        </form>
+
+        <!-- Live Results Console -->
+        <div id="simResultBox" class="mt-4 pt-3 border-top" style="display:none;">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <h6 class="fw-bold mb-0">
+                    <i class="bi bi-display me-1 text-primary"></i>Live Attack Response & Defense Inspection
+                </h6>
+                <span class="badge px-3 py-2 fs-6" id="simVerdictBadge">DEFENDED / NEUTRALIZED</span>
+            </div>
+
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <div class="bg-white p-3 rounded border h-100">
+                        <div class="small text-muted fw-bold text-uppercase mb-1">Defense Mechanism Engaged</div>
+                        <div class="fw-semibold text-primary" id="simDefenseLayer">—</div>
+                        <hr class="my-2">
+                        <div class="small text-muted fw-bold text-uppercase mb-1">HTTP Status Code Returned</div>
+                        <div class="fw-bold fs-5" id="simStatusCode">—</div>
+                    </div>
+                </div>
+
+                <div class="col-md-8">
+                    <div class="bg-white p-3 rounded border h-100">
+                        <div class="small text-muted fw-bold text-uppercase mb-1">Server Response / Sanitized Output</div>
+                        <div class="p-2 bg-light rounded font-monospace small mb-2 border" id="simOutputPreview">—</div>
+
+                        <div class="small text-muted fw-bold text-uppercase mb-1">Security Audit Log Entry Generated</div>
+                        <div class="p-2 bg-dark text-warning rounded font-monospace small border" id="simServerLog">—</div>
+                    </div>
+                </div>
+
+                <div class="col-12">
+                    <div class="alert alert-info border small mb-0" id="simExplanationBox">
+                        <strong><i class="bi bi-info-circle me-1"></i>Security Analysis:</strong>
+                        <span id="simExplanation">—</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<h4 class="fw-bold mb-3"><i class="bi bi-check2-all me-2 text-success"></i>Automated Security Test Suite</h4>
+<div class="d-flex flex-column gap-4" id="testCardsContainer">
+    {% for test in results %}
+    <div class="card shadow-sm border-0 test-card" id="card-{{ test.id }}">
+        <div class="card-header bg-white py-3 d-flex flex-wrap justify-content-between align-items-center gap-2">
+            <div class="d-flex align-items-center gap-2">
+                <span class="badge {{ 'bg-danger' if test.severity == 'Critical' else ('bg-warning text-dark' if test.severity == 'High' else 'bg-info text-dark') }}">
+                    {{ test.severity }}
+                </span>
+                <span class="badge bg-secondary-subtle text-secondary">{{ test.category }}</span>
+                <h5 class="mb-0 fw-bold">{{ loop.index }}. {{ test.name }}</h5>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+                <span class="badge px-3 py-2 fs-6 {{ 'bg-success text-white' if test.status == 'PASS' else 'bg-danger text-white' }}" id="status-badge-{{ test.id }}">
+                    <i class="bi {{ 'bi-check-circle-fill' if test.status == 'PASS' else 'bi-x-circle-fill' }} me-1"></i>{{ test.status }}
+                </span>
+                <span class="text-muted small font-monospace">{{ test.execution_time_ms }} ms</span>
+                <button type="button" class="btn btn-sm btn-outline-primary btn-run-single" data-test-id="{{ test.id }}">
+                    <i class="bi bi-arrow-repeat"></i> Run
+                </button>
+            </div>
+        </div>
+
+        <div class="card-body p-4">
+            <!-- Description & Defense -->
+            <p class="mb-2 text-dark">{{ test.description }}</p>
+            <div class="alert alert-light border small text-muted mb-3">
+                <strong><i class="bi bi-shield-check text-success me-1"></i>Defensive Implementation:</strong>
+                {{ test.prevention }}
+            </div>
+
+            <!-- Expected vs Actual Result -->
+            <div class="row g-3 mb-3">
+                <div class="col-md-6">
+                    <div class="p-3 bg-light rounded border h-100">
+                        <div class="text-uppercase small fw-bold text-muted mb-1">
+                            <i class="bi bi-bullseye me-1"></i>Expected Behavior
+                        </div>
+                        <div class="small text-dark">{{ test.expected_result }}</div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="p-3 bg-light rounded border h-100">
+                        <div class="text-uppercase small fw-bold text-muted mb-1">
+                            <i class="bi bi-activity me-1"></i>Actual Test Outcome
+                        </div>
+                        <div class="small {{ 'text-success fw-semibold' if test.status == 'PASS' else 'text-danger fw-semibold' }}">
+                            {{ test.actual_result }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Collapsible Technical Details -->
+            <div class="accordion accordion-flush border rounded mb-3" id="accordion-{{ test.id }}">
+                <div class="accordion-item">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button collapsed py-2 small fw-semibold text-muted" type="button"
+                                data-bs-toggle="collapse" data-bs-target="#collapse-code-{{ test.id }}">
+                            <i class="bi bi-code-slash me-2"></i>View Code Comparison: Vulnerable vs Secure Remediation
+                        </button>
+                    </h2>
+                    <div id="collapse-code-{{ test.id }}" class="accordion-collapse collapse">
+                        <div class="accordion-body p-3">
+                            <div class="row g-3">
+                                <div class="col-lg-6">
+                                    <div class="small fw-bold text-danger mb-1">
+                                        <i class="bi bi-x-octagon me-1"></i>Vulnerable Anti-Pattern
+                                    </div>
+                                    <pre class="m-0"><code class="language-python rounded">{{ test.vulnerable_code }}</code></pre>
+                                </div>
+                                <div class="col-lg-6">
+                                    <div class="small fw-bold text-success mb-1">
+                                        <i class="bi bi-check-circle me-1"></i>Secure Implementation (Applied in Portal)
+                                    </div>
+                                    <pre class="m-0"><code class="language-python rounded">{{ test.secure_code }}</code></pre>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="accordion-item">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button collapsed py-2 small fw-semibold text-muted" type="button"
+                                data-bs-toggle="collapse" data-bs-target="#collapse-io-{{ test.id }}">
+                            <i class="bi bi-arrow-left-right me-2"></i>View Request / Response Inspection
+                        </button>
+                    </h2>
+                    <div id="collapse-io-{{ test.id }}" class="accordion-collapse collapse">
+                        <div class="accordion-body p-3 bg-light small">
+                            <div class="mb-2">
+                                <strong>Request Payload:</strong>
+                                <div class="font-monospace text-muted mt-1 p-2 bg-white rounded border">{{ test.request_details }}</div>
+                            </div>
+                            <div>
+                                <strong>Response Outcome:</strong>
+                                <div class="font-monospace text-muted mt-1 p-2 bg-white rounded border">{{ test.response_details }}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Explanation & Remediation -->
+            <div class="small text-muted">
+                <strong>Analysis & Explanation:</strong> {{ test.explanation }}
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Highlight code blocks
+    document.addEventListener('DOMContentLoaded', (event) => {
+        document.querySelectorAll('pre code').forEach((el) => {
+            hljs.highlightElement(el);
+        });
+    });
+
+    // Preset attack payload buttons
+    document.querySelectorAll('.btn-preset').forEach((btn) => {
+        btn.addEventListener('click', function() {
+            const attackType = this.dataset.type;
+            const val = this.dataset.val;
+            document.getElementById('simAttackType').value = attackType;
+            document.getElementById('simPayload').value = val;
+            document.getElementById('simPayload').focus();
+        });
+    });
+
+    // Interactive attack simulation execution
+    const simForm = document.getElementById('attackSimulationForm');
+    if (simForm) {
+        simForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const attackType = document.getElementById('simAttackType').value;
+            const payload = document.getElementById('simPayload').value;
+            const btn = document.getElementById('btnLaunchAttack');
+            const spinner = document.getElementById('simSpinner');
+            const icon = document.getElementById('simIcon');
+
+            btn.disabled = true;
+            spinner.classList.remove('d-none');
+            icon.classList.add('d-none');
+
+            try {
+                const response = await fetch('/admin/security-lab/simulate', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({ attack_type: attackType, payload: payload })
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    const box = document.getElementById('simResultBox');
+                    box.style.display = 'block';
+
+                    const verdict = document.getElementById('simVerdictBadge');
+                    verdict.textContent = data.verdict;
+                    if (data.verdict.includes('DEFENDED') || data.verdict.includes('ACCEPTED')) {
+                        verdict.className = 'badge px-3 py-2 fs-6 bg-success text-white';
+                    } else {
+                        verdict.className = 'badge px-3 py-2 fs-6 bg-danger text-white';
+                    }
+
+                    document.getElementById('simDefenseLayer').textContent = data.defense_layer;
+                    document.getElementById('simStatusCode').textContent = `HTTP ${data.http_status}`;
+                    document.getElementById('simOutputPreview').textContent = data.output_preview || data.escaped_html || 'Safe response';
+                    document.getElementById('simServerLog').textContent = data.server_log;
+                    document.getElementById('simExplanation').textContent = data.explanation;
+
+                    box.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                } else {
+                    alert(data.error || 'Attack simulation error.');
+                }
+            } catch (err) {
+                console.error("Simulation request error", err);
+                alert("Failed to execute live attack simulation.");
+            } finally {
+                btn.disabled = false;
+                spinner.classList.add('d-none');
+                icon.classList.remove('d-none');
+            }
+        });
+    }
+
+    // Single test execution via AJAX
+    document.querySelectorAll('.btn-run-single').forEach((btn) => {
+        btn.addEventListener('click', async function() {
+            const testId = this.dataset.testId;
+            const originalHtml = this.innerHTML;
+            this.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+            this.disabled = true;
+
+            try {
+                const response = await fetch(`/admin/security-lab/run/${testId}`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                        'Accept': 'application/json'
+                    }
+                });
+
+                const data = await response.json();
+                if (data.success && data.result) {
+                    const res = data.result;
+                    const badge = document.getElementById(`status-badge-${testId}`);
+                    if (badge) {
+                        badge.className = `badge px-3 py-2 fs-6 ${res.status === 'PASS' ? 'bg-success text-white' : 'bg-danger text-white'}`;
+                        badge.innerHTML = `<i class="bi ${res.status === 'PASS' ? 'bi-check-circle-fill' : 'bi-x-circle-fill'} me-1"></i>${res.status}`;
+                    }
+                }
+            } catch (err) {
+                console.error("Test run failed", err);
+            } finally {
+                this.innerHTML = originalHtml;
+                this.disabled = false;
+            }
+        });
+    });
+</script>
+{% endblock %}

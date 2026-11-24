@@ -1,0 +1,77 @@
+version: "3.9"
+
+# ============================================================
+# College Club Membership Portal — Docker Compose
+# ============================================================
+# Usage:
+#   docker compose up --build          # start (foreground)
+#   docker compose up --build -d       # start (detached)
+#   docker compose down                # stop & remove containers
+#   docker compose down -v             # also remove named volumes
+
+services:
+
+  # ----------------------------------------------------------
+  # Flask web application
+  # ----------------------------------------------------------
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: club_portal_web
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    volumes:
+      # Persist the SQLite database outside the container
+      - sqlite_data:/app/instance
+    environment:
+      - FLASK_ENV=${FLASK_ENV:-production}
+      - FLASK_HOST=0.0.0.0
+      - FLASK_PORT=5000
+      # Override with a real value via .env or CI secrets:
+      - SECRET_KEY=${SECRET_KEY:-please-set-a-real-secret-key}
+      # Uncomment to use Redis for rate limiting:
+      # - REDIS_URL=redis://redis:6379/0
+    depends_on: []   # Add 'redis' here if you enable the Redis service below
+    networks:
+      - portal_net
+    healthcheck:
+      test: ["CMD", "python", "-c",
+             "import urllib.request; urllib.request.urlopen('http://localhost:5000/auth/login')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+
+  # ----------------------------------------------------------
+  # Optional: Redis (for persistent rate-limit storage)
+  # ----------------------------------------------------------
+  # Uncomment the block below and set REDIS_URL in .env to enable.
+  #
+  # redis:
+  #   image: redis:7-alpine
+  #   container_name: club_portal_redis
+  #   restart: unless-stopped
+  #   ports:
+  #     - "6379:6379"
+  #   volumes:
+  #     - redis_data:/data
+  #   networks:
+  #     - portal_net
+
+# ----------------------------------------------------------
+# Named volumes
+# ----------------------------------------------------------
+volumes:
+  sqlite_data:
+    driver: local
+  # redis_data:
+  #   driver: local
+
+# ----------------------------------------------------------
+# Networks
+# ----------------------------------------------------------
+networks:
+  portal_net:
+    driver: bridge

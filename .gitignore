@@ -1,0 +1,63 @@
+# ============================================================
+# College Club Membership Portal — .gitignore
+# ============================================================
+
+# Environments & Secrets
+.env
+.env.local
+.env.*.local
+*.env
+
+# SQLite Database & Instance files
+instance/
+*.db
+*.sqlite
+*.sqlite3
+
+# Python bytecode and cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Distribution / packaging
+build/
+dist/
+*.egg-info/
+*.egg
+
+# Virtual environments
+venv/
+.venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+
+# Testing & Coverage
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.nox/
+coverage.xml
+
+# IDEs & Editors
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.project
+.pydevproject
+.settings/
+
+# OS-generated files
+.DS_Store
+Thumbs.db
+ehthumbs.db
+[Dd]esktop.ini
+
+# Logs
+*.log
+logs/
