@@ -102,7 +102,7 @@ capstone secure-coding/
 
 ```bash
 # 1. Clone / navigate to the project
-cd "capstone secure-coding"
+cd "College-Club-Membership-Portal"
 
 # 2. Create and activate a virtual environment
 python -m venv venv
