@@ -2,7 +2,7 @@
 Application Entry Point
 ========================
 Run with:
-    python run.py                   # development server (default)
+    python run.py                   # development server (default==67)
     FLASK_ENV=production python run.py
 
 Or via Flask CLI:
